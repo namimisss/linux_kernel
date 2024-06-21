@@ -37,7 +37,7 @@ export	VERSION PATCHLEVEL SUBLEVEL EXTRAVERSION KERNELRELEASE ARCH \
 	CONFIG_SHELL TOPDIR HPATH HOSTCC HOSTCFLAGS CROSS_COMPILE AS LD CC \
 	CPP AR NM STRIP OBJCOPY OBJDUMP MAKE MAKEFILES GENKSYMS MODFLAGS PERL
 
-.PYONY: all clean
+.PYONY: all image clean
 all:	boot
 
 CPPFLAGS := -D__KERNEL__ -I$(HPATH)
@@ -55,11 +55,26 @@ include arch/$(ARCH)/Makefile
 export	CPPFLAGS CFLAGS AFLAGS
 $(info "ld:$(LD)")
 $(info "topdir:$(TOPDIR)")
+# $(V)dd if=$(OBJDIR)/kern/kernel of=$(OBJDIR)/kern/kernel.img~ seek=1 conv=notrunc 2>/dev/null
 boot:
 	@echo "run boot"
 	@$(MAKE) CFLAGS="$(CFLAGS) $(CFLAGS_KERNEL)" -C arch/$(ARCH)/boot
+image: boot
+	@echo "run make image"
+	@mkdir -p $(TOPDIR)/test
+	@dd if=/dev/zero of=$(TOPDIR)/test/kernel.img.tmp count=10000 2>/dev/null
+	@dd if=$(TOPDIR)/arch/$(ARCH)/boot/bootsect of=$(TOPDIR)/test/kernel.img.tmp conv=notrunc 2>/dev/null
+	@mv $(TOPDIR)/test/kernel.img.tmp $(TOPDIR)/test/kernel.img
 
+qemu-nox-gdb: image
+	@echo "run qemu-nox-gdb"
+	qemu-system-i386 -nographic -drive file=$(TOPDIR)/test/kernel.img,index=0,media=disk,format=raw -serial mon:stdio -D $(TOPDIR)/test/qemu.log -s -S
+
+gdb: $(TOPDIR)/arch/$(ARCH)/boot/bootsect.elf
+	@echo "run make gdb"
+	@gdb $(TOPDIR)/arch/$(ARCH)/boot/bootsect.elf
 
 clean:
 	@echo "run clean"
 	@$(MAKE) -C arch/$(ARCH)/boot clean
+	@rm -rf $(TOPDIR)/test

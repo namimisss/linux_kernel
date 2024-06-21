@@ -44,6 +44,35 @@ CS:IP的值依然是 0xF000:0xFFF0,但是CS的Base为:0xFFFF0000,所以计算出
 ```
 在上面的章节中，我说了 CPU 执行的第一条指令是在地址 0xFFFFFFF0 处，这个地址远远大于 0xFFFFF ( 1MB )。那么实模式下的 CPU 是如何访问到这个地址的呢？0xFFFFFFF0 这个地址被映射到了 ROM，因此 CPU 执行的第一条指令来自于 ROM，而不是 RAM
 
+# bootloader
+bios 将MBR(512 byte)(bootloader)的内容复制到cs:ip(0x07c0:0x0000)处开始执行，而bootloader将自身(512byte)移动到0x9000处，并跳转到go标签处开始执行
+```c
+_start:
+	ljmp $INITSEG, $go
+go:
+
+```
+
+```bash
+# x86实模式跳转分为短跳、近跳和远跳
+# 短跳是当前指令的内存位置与目标点的内存位置相距小于128字节
+# 远跳是在分段内存模式下，跳转到另一个段中的指令时使用远眺
+# 其他情况是近跳
+
+# 短跳的操作数是一个偏移量，正数是往后，负数是往前跳转
+L1:
+	mov $1, %ax
+	jmp L2
+L2:
+
+# 远跳:
+L1:
+	mov $1, %ax
+	ljmp $INITSEG,L2	# ljmp cs, ip, cs为$INITSEG,而ip为L2相对文件头的偏移
+L2:
+
+```
+
 **TODO**
 grub2引导流程
 现在linux内核一般通过grub2/uboot来当作bootloader,当内核被引导入内存后，内存使用情况如下:

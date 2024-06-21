@@ -13,11 +13,10 @@ bootsect: bootsect.o
 	@$(OBJCOPY) -O binary bootsect.elf $@
 
 bootsect.o: bootsect.s
-	@$(AS) -o $@ $<
+	@$(AS) -g -o $@ $<
 
 bootsect.s: bootsect.S Makefile $(BOOT_INCL)
 	@$(CPP) $(CPPFLAGS) -traditional $(SVGA_MODE) $(RAMDISK) $< -o $@
-
 
 BOOTSECT_TMP_FILE = bootsect bootsect.elf bootsect.o bootsect.s
 clean:
