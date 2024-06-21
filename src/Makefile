@@ -37,6 +37,7 @@ export	VERSION PATCHLEVEL SUBLEVEL EXTRAVERSION KERNELRELEASE ARCH \
 	CONFIG_SHELL TOPDIR HPATH HOSTCC HOSTCFLAGS CROSS_COMPILE AS LD CC \
 	CPP AR NM STRIP OBJCOPY OBJDUMP MAKE MAKEFILES GENKSYMS MODFLAGS PERL
 
+.PYONY: all clean
 all:	boot
 
 CPPFLAGS := -D__KERNEL__ -I$(HPATH)
@@ -55,10 +56,10 @@ export	CPPFLAGS CFLAGS AFLAGS
 $(info "ld:$(LD)")
 $(info "topdir:$(TOPDIR)")
 boot:
-	@echo "boot"
+	@echo "run boot"
 	@$(MAKE) CFLAGS="$(CFLAGS) $(CFLAGS_KERNEL)" -C arch/$(ARCH)/boot
 
 
 clean:
-	@echo "clean"
+	@echo "run clean"
 	@$(MAKE) -C arch/$(ARCH)/boot clean
