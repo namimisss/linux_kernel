@@ -13,7 +13,7 @@ bootsect: bootsect.o
 	@$(OBJCOPY) -O binary bootsect.elf $@
 
 bootsect.o: bootsect.s
-	@$(AS) -g -o $@ $<
+	@$(AS) -o $@ $<
 
 bootsect.s: bootsect.S Makefile $(BOOT_INCL)
 	@$(CPP) $(CPPFLAGS) -traditional $(SVGA_MODE) $(RAMDISK) $< -o $@

@@ -104,13 +104,13 @@ go:	movw	$0x4000-12, %di		# 0x4000 is an arbitrary value >=
 	movw	%cx, %fs		# set fs to 0
 	movw	$0x78, %bx		# fs:bx is parameter table address
 	pushw	%ds
-	ldsw	%fs:(%bx), %si		# ds:si is source
+	ldsw	%fs:(%bx), %si		# ds:si is source 将%fs:(%bs)指向的地址(0x00:0x78)的值(2byte)放到%si中，并且%ds等于此地址值加2,%si应该是BIOS某个函数的地址
 	movb	$6, %cl			# copy 12 bytes
-	pushw	%di			# di = 0x4000-12.
+	pushw	%di			# di = 0x4000-12. 将%si指向内存的地址移动到%di处
 	rep				# don't need cld -> done on line 66
 	movsw
-	popw	%di
-	popw	%ds
+	popw	%di		# $0x4000-12
+	popw	%ds		# INITSEG
 	movb	$36, 0x4(%di)		# patch sector count
 	movw	%di, %fs:(%bx)
 	movw	%es, %fs:2(%bx)
@@ -120,16 +120,16 @@ go:	movw	$0x4000-12, %di		# 0x4000 is an arbitrary value >=
 # Also, cx = 0 from rep movsw above.
 
 load_setup:
-	xorb	%ah, %ah		# reset FDC 
-	xorb	%dl, %dl
+	xorb	%ah, %ah		# reset FDC 复位软盘控制器
+	xorb	%dl, %dl		# dl = 0 第一个软驱
 	int 	$0x13	
-	xorw	%dx, %dx		# drive 0, head 0
-	movb	$0x02, %cl		# sector 2, track 0
+	xorw	%dx, %dx		# drive 0, head 0	# 因为是软盘，所以dl=0
+	movb	$0x02, %cl		# sector 2, track 0	# 第二扇区
 	movw	$0x0200, %bx		# address = 512, in INITSEG
 	movb	$0x02, %ah		# service 2, "read sector(s)"
-	movb	setup_sects, %al	# (assume all on head 0, track 0)
-	int	$0x13			# read it
-	jnc	ok_load_setup		# ok - continue
+	movb	setup_sects, %al	# (assume all on head 0, track 0) setup_sects = 4, 读取4个扇区
+	int	$0x13			# read it # 数据保存在ES:BX # CF=0 操作成功,AH=0,AL=传输扇区数;否则，AH=状态码
+	jnc	ok_load_setup		# ok - continue	# 若 CF=0，则进位
 
 	pushw	%ax			# dump error code
 	call	print_nl
@@ -145,10 +145,10 @@ ok_load_setup:
 # Guess 36 sectors if sector 36 can be read, 18 sectors if sector 18
 # can be read, 15 if sector 15 can be read.  Otherwise guess 9.
 
-	movw	$disksizes, %si		# table of sizes to try
+	movw	$disksizes, %si		# table of sizes to try	disksizes:	.byte 36, 18, 15, 9
 probe_loop:
-	lodsb
-	cbtw				# extend to word
+	lodsb		# 从 %si 地址处 读取一个byte到AL
+	cbtw				# extend to word AL -> AX
 	movw	%ax, sectors
 	cmpw	$disksizes+4, %si
 	jae	got_sectors		# If all else fails, try 9
@@ -247,7 +247,7 @@ ok1_read:
 	movw	sectors, %ax
 	subw	sread, %ax
 	movw	%ax, %cx
-	shlw	$9, %cx
+	shlw	$9, %cx		# 逻辑左移 CX=CX*512+段内当前偏移值(bx)
 	addw	%bx, %cx
 	jnc	ok2_read
 	
