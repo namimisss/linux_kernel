@@ -94,13 +94,14 @@ include/linux/version.h: ./Makefile
 boot: include/linux/version.h include/linux/compile.h
 	@echo "run boot"
 	@$(MAKE) CFLAGS="$(CFLAGS) $(CFLAGS_KERNEL)" -C arch/$(ARCH)/boot
+
+include make_lib/make_comm.mk
+
 image: boot
 	@echo "run make image"
 	@mkdir -p $(TOPDIR)/test
-	@dd if=/dev/zero of=$(TOPDIR)/test/kernel.img.tmp count=10000 2>/dev/null
-	@dd if=$(TOPDIR)/arch/$(ARCH)/boot/bootsect of=$(TOPDIR)/test/kernel.img.tmp conv=notrunc 2>/dev/null
-	@dd if=$(TOPDIR)/arch/$(ARCH)/boot/setup of=$(TOPDIR)/test/kernel.img.tmp seek=1 conv=notrunc 2>/dev/null
-	@mv $(TOPDIR)/test/kernel.img.tmp $(TOPDIR)/test/kernel.img
+	@dd if=/dev/zero of=$(TOPDIR)/test/qemu_kernel.img.tmp count=10000 2>/dev/null
+	$(call make_img,qemu_bochs_kernel.img.tmp,qemu_kernel.img)
 
 qemu-nox-gdb: image
 	@echo "run qemu-nox-gdb"
@@ -109,6 +110,14 @@ qemu-nox-gdb: image
 gdb: $(TOPDIR)/arch/$(ARCH)/boot/bootsect.elf
 	@echo "run make gdb"
 	@gdb $(TOPDIR)/arch/$(ARCH)/boot/bootsect.elf
+
+bochs-image: boot
+	@echo "make bochs image"
+	@mkdir -p $(TOPDIR)/test
+	@rm -rf $(TOPDIR)/test/bochs_kernel.img.tmp
+	@bximage -q -func=create -hd=16M $(TOPDIR)/test/bochs_kernel.img.tmp
+	$(call make_img,bochs_kernel.img.tmp,bochs_kernel.img)
+	@cp $(TOPDIR)/tools_file/bochsrc $(TOPDIR)/test/
 
 clean:
 	@echo "run clean"
