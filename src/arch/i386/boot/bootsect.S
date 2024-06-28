@@ -122,6 +122,7 @@ go:	movw	$0x4000-12, %di		# 0x4000 is an arbitrary value >=
 load_setup:
 	xorb	%ah, %ah		# reset FDC 复位软盘控制器
 	xorb	%dl, %dl		# dl = 0 第一个软驱
+#	movb	$0x80, %dl		# 硬盘
 	int 	$0x13	
 	xorw	%dx, %dx		# drive 0, head 0	# 因为是软盘，所以dl=0
 	movb	$0x02, %cl		# sector 2, track 0	# 第二扇区
@@ -247,7 +248,7 @@ ok1_read:
 	movw	sectors, %ax
 	subw	sread, %ax
 	movw	%ax, %cx
-	shlw	$9, %cx		# 逻辑左移 CX=CX*512+段内当前偏移值(bx)
+	shlw	$9, %cx		# 逻辑左移 CX=CX*512+段内当前偏移值(bx) bx=0
 	addw	%bx, %cx
 	jnc	ok2_read
 	
@@ -260,8 +261,8 @@ ok2_read:
 	call	read_track
 	movw	%ax, %cx
 	addw	sread, %ax
-	cmpw	sectors, %ax
-	jne	ok3_read
+	cmpw	sectors, %ax	# 不相等, ZF=1
+	jne	ok3_read		# 相等则跳转	ZF = 0
 	
 	movw	$1, %ax
 	subw	head, %ax

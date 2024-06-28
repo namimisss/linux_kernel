@@ -1,5 +1,5 @@
 #floppy_bootsig_check: disabled=0
-#floppya: type=1_44,1_44="a.img", status=inserted, write_protected=0
+#floppya: type=1_44,1_44="bochs_kernel_floppy.img", status=inserted, write_protected=0
 #vgaromimage: file=/usr/share/vgabios/vgabios.bin
 
 boot: disk

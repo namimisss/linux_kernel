@@ -119,6 +119,14 @@ bochs-image: boot
 	$(call make_img,bochs_kernel.img.tmp,bochs_kernel.img)
 	@cp $(TOPDIR)/tools_file/bochsrc $(TOPDIR)/test/
 
+bochs-image-floppy: boot
+	@echo "make bochs image floppy"
+	@mkdir -p $(TOPDIR)/test
+	@rm -rf $(TOPDIR)/test/bochs_kernel_floppy.img.tmp
+	@bximage -q -func=create -fd=1.44M $(TOPDIR)/test/bochs_kernel_floppy.img.tmp
+	$(call make_img,bochs_kernel_floppy.img.tmp,bochs_kernel_floppy.img)
+	@cp $(TOPDIR)/tools_file/bochsrc $(TOPDIR)/test/
+
 clean:
 	@echo "run clean"
 	@$(MAKE) -C arch/$(ARCH)/boot clean
