@@ -1,1 +1,4 @@
 test
+.version
+bochs
+qemu

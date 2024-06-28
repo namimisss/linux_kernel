@@ -56,7 +56,42 @@ export	CPPFLAGS CFLAGS AFLAGS
 $(info "ld:$(LD)")
 $(info "topdir:$(TOPDIR)")
 # $(V)dd if=$(OBJDIR)/kern/kernel of=$(OBJDIR)/kern/kernel.img~ seek=1 conv=notrunc 2>/dev/null
-boot:
+
+$(TOPDIR)/include/linux/version.h: include/linux/version.h
+$(TOPDIR)/include/linux/compile.h: include/linux/compile.h
+
+newversion:
+	@if [ ! -f .version ]; then \
+		echo 1 > .version; \
+	else \
+		expr 0`cat .version` + 1 > .version; \
+	fi
+
+include/linux/compile.h: include/linux/version.h newversion
+	@echo -n \#define UTS_VERSION \"\#`cat .version` > .ver
+	@if [ -n "$(CONFIG_SMP)" ] ; then echo -n " SMP" >> .ver; fi
+	@if [ -f .name ]; then  echo -n \-`cat .name` >> .ver; fi
+	@echo ' '`date`'"' >> .ver
+	@echo \#define LINUX_COMPILE_TIME \"`date +%T`\" >> .ver
+	@echo \#define LINUX_COMPILE_BY \"`whoami`\" >> .ver
+	@echo \#define LINUX_COMPILE_HOST \"`hostname`\" >> .ver
+	@if [ -x /bin/dnsdomainname ]; then \
+	   echo \#define LINUX_COMPILE_DOMAIN \"`dnsdomainname`\"; \
+	 elif [ -x /bin/domainname ]; then \
+	   echo \#define LINUX_COMPILE_DOMAIN \"`domainname`\"; \
+	 else \
+	   echo \#define LINUX_COMPILE_DOMAIN ; \
+	 fi >> .ver
+	@echo \#define LINUX_COMPILER \"`$(CC) $(CFLAGS) -v 2>&1 | tail -1`\" >> .ver
+	@mv -f .ver $@
+
+include/linux/version.h: ./Makefile
+	@echo \#define UTS_RELEASE \"$(KERNELRELEASE)\" > .ver
+	@echo \#define LINUX_VERSION_CODE `expr $(VERSION) \\* 65536 + $(PATCHLEVEL) \\* 256 + $(SUBLEVEL)` >> .ver
+	@echo '#define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))' >>.ver
+	@mv -f .ver $@
+
+boot: include/linux/version.h include/linux/compile.h
 	@echo "run boot"
 	@$(MAKE) CFLAGS="$(CFLAGS) $(CFLAGS_KERNEL)" -C arch/$(ARCH)/boot
 image: boot
@@ -64,6 +99,7 @@ image: boot
 	@mkdir -p $(TOPDIR)/test
 	@dd if=/dev/zero of=$(TOPDIR)/test/kernel.img.tmp count=10000 2>/dev/null
 	@dd if=$(TOPDIR)/arch/$(ARCH)/boot/bootsect of=$(TOPDIR)/test/kernel.img.tmp conv=notrunc 2>/dev/null
+	@dd if=$(TOPDIR)/arch/$(ARCH)/boot/setup of=$(TOPDIR)/test/kernel.img.tmp seek=1 conv=notrunc 2>/dev/null
 	@mv $(TOPDIR)/test/kernel.img.tmp $(TOPDIR)/test/kernel.img
 
 qemu-nox-gdb: image
@@ -78,3 +114,6 @@ clean:
 	@echo "run clean"
 	@$(MAKE) -C arch/$(ARCH)/boot clean
 	@rm -rf $(TOPDIR)/test
+	@rm -rf $(TOPDIR)/.version
+	@rm -rf $(TOPDIR)/include/linux/compile.h
+	@rm -rf $(TOPDIR)/include/linux/compile.h

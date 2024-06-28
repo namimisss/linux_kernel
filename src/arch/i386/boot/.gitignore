@@ -3,3 +3,9 @@ bootsect
 bootsect.elf
 bootsect.o
 bootsect.s
+
+# setup
+setup
+setup.elf
+setup.o
+setup.s
